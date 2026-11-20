@@ -1,0 +1,1 @@
+# API Cloudflare Pages Functions\nCác endpoint phía máy chủ. Cần kiểm tra quyền và dữ liệu đầu vào ở phía máy chủ.

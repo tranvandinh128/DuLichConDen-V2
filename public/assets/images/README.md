@@ -1,0 +1,1 @@
+# Hình ảnh chung\nLogo, biểu tượng và hình ảnh dùng chung.

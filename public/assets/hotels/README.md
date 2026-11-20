@@ -1,0 +1,1 @@
+# Hình ảnh khách sạn\nẢnh cơ sở lưu trú và tiện nghi.

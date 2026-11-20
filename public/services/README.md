@@ -1,0 +1,1 @@
+# Dịch vụ phía giao diện\nCác mô-đun gọi API và tích hợp dịch vụ công khai. Không chứa khóa bí mật.

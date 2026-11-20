@@ -1,0 +1,1 @@
+# Giỏ hàng\nNơi đặt trang và chức năng giỏ hàng.

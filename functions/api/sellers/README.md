@@ -1,0 +1,1 @@
+# API người bán\nCác endpoint đăng ký, quản lý và xác minh cửa hàng.

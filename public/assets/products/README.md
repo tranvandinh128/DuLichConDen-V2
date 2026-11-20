@@ -1,0 +1,1 @@
+# Hình ảnh sản phẩm\nẢnh sản phẩm do người bán đăng hoặc quản trị viên quản lý.

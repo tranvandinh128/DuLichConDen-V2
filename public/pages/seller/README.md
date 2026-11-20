@@ -1,0 +1,1 @@
+# Khu vực người bán\nNơi đặt trang quản lý cửa hàng, sản phẩm, tồn kho và đơn hàng.

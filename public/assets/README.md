@@ -1,0 +1,1 @@
+# Tài nguyên hình ảnh\nLưu hình ảnh tĩnh của website. Nên dùng tên tệp không dấu và tối ưu dung lượng.

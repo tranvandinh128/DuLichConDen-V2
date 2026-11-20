@@ -1,0 +1,1 @@
+# JavaScript phía trình duyệt\nLưu mã giao diện và tương tác. Không đặt khóa bí mật Supabase hoặc Pi tại đây.

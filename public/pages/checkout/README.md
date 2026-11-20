@@ -1,0 +1,1 @@
+# Thanh toán\nNơi đặt trang đặt hàng và lựa chọn COD, chuyển khoản ngân hàng, Pi.
