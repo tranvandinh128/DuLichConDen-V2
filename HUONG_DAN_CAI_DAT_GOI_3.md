@@ -1,147 +1,400 @@
-# HƯỚNG DẪN CÀI ĐẶT GÓI 3 – DuLichConDen 2.0
 
-## 1. Các tệp trong gói
+# DuLichConDen-V2 – HƯỚNG DẪN CÀI ĐẶT VÀ VẬN HÀNH GÓI 3
 
-Giải nén ZIP. Đưa đúng các tệp sau vào repository `tranvandinh128/DuLichConDen-V2`:
+## 1. GIỚI THIỆU
 
-| Tệp trên máy tính | Vị trí đích trong GitHub |
-|---|---|
-| `public/js/marketplace/admin.js` | `public/js/marketplace/admin.js` |
-| `public/js/marketplace/seller.js` | `public/js/marketplace/seller.js` |
-| `public/js/marketplace/marketplace.js` | `public/js/marketplace/marketplace.js` |
-| `supabase/marketplace_schema.sql` | `supabase/marketplace_schema.sql` |
+Gói 3 là phân hệ sàn thương mại điện tử nhiều người bán của dự án DuLichConDen-V2.
 
-Không tải đè `public/index.html`, `public/js/app.js`, CSS, `auth.js` hoặc các tệp hiện đang chạy.
+Tài liệu này hướng dẫn kiểm tra mã nguồn, cấu hình Supabase, quản lý tài khoản, phân quyền và kiểm thử hệ thống.
 
-Nếu thư mục `public/js/marketplace` chưa có trên GitHub, hãy tạo đúng thư mục này bằng cách tải các tệp có kèm đường dẫn tương đối. GitHub sẽ tạo thư mục khi commit.
+Tên thương hiệu: DuLichConDen.
 
-## 2. Tạo bảng trên Supabase
+Tên dự án: DuLichConDen-V2.
 
-1. Mở Supabase Dashboard của đúng dự án DuLichConDen.
-2. Chọn **SQL Editor**.
-3. Chọn **New query**.
-4. Mở tệp `supabase/marketplace_schema.sql` trên máy tính, sao chép toàn bộ nội dung.
-5. Dán vào SQL Editor và nhấn **Run**.
-6. Mở **Table Editor**, kiểm tra có ba bảng:
-   - `marketplace_admins`
-   - `marketplace_shops`
-   - `marketplace_products`
+Phiên bản phát triển: 3.0.
 
-Chỉ chạy SQL một lần trên đúng dự án. Nếu đã có bảng trùng tên hoặc dữ liệu sàn trước đó, hãy sao lưu và kiểm tra trước khi chạy.
+Repository:
 
-## 3. Điều kiện kết nối Supabase
+`tranvandinh128/DuLichConDen-V2`
 
-Ba tệp JavaScript tìm Supabase client theo một trong hai tên toàn cục:
-- `window.supabaseClient`
-- `window.DuLichConDenSupabase`
+Nhánh phát triển:
 
-Client phải được khởi tạo bằng Supabase JavaScript SDK v2 trước khi gọi các hàm marketplace. Tệp hiện tại không tự khởi tạo client vì chưa xác nhận cấu trúc thực tế của `public/config/supabase.js`.
+`feature/dulichconden-3.0`
 
-Chỉ sử dụng **Project URL** và **anon/publishable key** ở trình duyệt. Tuyệt đối không đưa `service_role` key vào HTML hoặc JavaScript công khai.
+## 2. NGUYÊN TẮC TRƯỚC KHI CÀI ĐẶT
 
-## 4. Cấp quyền quản trị viên
+Trước khi thực hiện bất kỳ thay đổi nào:
 
-Quản trị viên phải có tài khoản Supabase Auth trước.
+1. Kiểm tra đúng repository DuLichConDen-V2.
+2. Kiểm tra đang làm việc trên nhánh `feature/dulichconden-3.0`.
+3. Kiểm tra file đã tồn tại hay chưa.
+4. Không tạo file trùng chức năng.
+5. Không ghi đè các file đang hoạt động nếu chưa kiểm tra.
+6. Không chạy lại SQL cũ trên Production.
+7. Sao lưu dữ liệu quan trọng trước khi thay đổi cấu trúc cơ sở dữ liệu.
 
-1. Đăng nhập Supabase Dashboard.
-2. Mở **Authentication → Users**.
-3. Sao chép UUID của tài khoản quản trị.
-4. Trong SQL Editor chạy lệnh sau, thay UUID mẫu bằng UUID thật:
+Mọi chức năng mới phải được kiểm tra trước khi tích hợp vào website đang hoạt động.
 
-```sql
-insert into public.marketplace_admins (user_id)
-values ('PASTE-ADMIN-USER-UUID-HERE')
-on conflict (user_id) do nothing;
-```
+## 3. CẤU TRÚC MÃ NGUỒN
 
-Không cấp quyền admin bằng cách cho người dùng tự chọn vai trò trong biểu mẫu đăng ký.
+Các thành phần thương mại điện tử chính:
 
-## 5. Nạp các tệp JavaScript
+### 3.1. Cấu hình Supabase
 
-Khi tích hợp vào trang HTML, tải Supabase SDK và cấu hình client trước, rồi mới tải ba tệp:
+`config/supabase.js`
 
-```html
-<script src="ĐƯỜNG_DẪN_SUPABASE_SDK_V2"></script>
-<script src="/config/supabase.js"></script>
-<script src="/js/marketplace/admin.js"></script>
-<script src="/js/marketplace/seller.js"></script>
-<script src="/js/marketplace/marketplace.js"></script>
-```
+File chứa:
 
-Đường dẫn trên là ví dụ theo thư mục `public` được xuất bản làm gốc website. Chỉ thêm các thẻ script sau khi kiểm tra `supabase.js` hiện tại đang khởi tạo client như thế nào. Không thay thế cấu hình đang chạy chỉ để làm theo ví dụ.
+- Supabase Project URL.
+- Supabase publishable key.
 
-## 6. Các hàm có sẵn
+Chỉ sử dụng khóa công khai dành cho trình duyệt.
 
-### Quản trị viên
+Không đưa Supabase Secret Key hoặc legacy service_role key vào file này.
 
-```js
-await DuLichConDenMarketplace.admin.dashboard();
-await DuLichConDenMarketplace.admin.listShops("pending");
-await DuLichConDenMarketplace.admin.reviewShop(shopId, "approved", "Đã kiểm tra");
-await DuLichConDenMarketplace.admin.listProducts("pending");
-await DuLichConDenMarketplace.admin.reviewProduct(productId, "approved", "Đạt yêu cầu");
-```
+### 3.2. Supabase Client
 
-Trạng thái gian hàng: `pending`, `approved`, `rejected`, `suspended`.
+`public/js/marketplace/supabase-client.js`
 
-Trạng thái sản phẩm: `pending`, `approved`, `rejected`, `hidden`.
+Chức năng:
 
-### Người bán
+- Tải Supabase JavaScript SDK phiên bản 2.
+- Đọc cấu hình từ `config/supabase.js`.
+- Khởi tạo Supabase Client.
+- Quản lý phiên đăng nhập.
+- Kiểm tra trạng thái cấu hình.
 
-```js
-await DuLichConDenMarketplace.seller.myShops();
+Không tự tạo thêm Supabase Client khác nếu chưa kiểm tra kiến trúc hiện tại.
 
-await DuLichConDenMarketplace.seller.registerShop({
-  shop_name: "Tên gian hàng",
-  owner_name: "Tên người đại diện",
-  business_type: "individual", // individual | household_business | company
-  phone: "Số điện thoại",
-  email: "email@example.com",
-  address: "Địa chỉ",
-  description: "Giới thiệu gian hàng"
-});
+### 3.3. Xác thực người dùng
 
-await DuLichConDenMarketplace.seller.myProducts(shopId);
+`public/js/marketplace/auth.js`
 
-await DuLichConDenMarketplace.seller.createProduct({
-  shop_id: "UUID-GIAN-HANG",
-  name: "Tên sản phẩm",
-  description: "Mô tả",
-  price_vnd: 100000,
-  stock: 10,
-  category: "Đặc sản địa phương",
-  image_url: "https://..."
-});
-```
+Chức năng:
 
-Gian hàng phải được duyệt trước khi người bán đăng sản phẩm. Sản phẩm mới sẽ ở trạng thái chờ duyệt.
+- Lấy người dùng hiện tại.
+- Đăng nhập bằng email và mật khẩu.
+- Đăng ký tài khoản.
+- Đăng xuất.
+- Kiểm tra phiên Supabase.
 
-### Khách mua hàng
+### 3.4. Quản lý người bán
 
-```js
-const result = await DuLichConDenMarketplace.store.listProducts({
-  search: "đặc sản",
-  page: 1,
-  pageSize: 12
-});
+`public/js/marketplace/seller.js`
 
-const product = await DuLichConDenMarketplace.store.getProduct(productId);
-const shops = await DuLichConDenMarketplace.store.listShops();
-```
+Chức năng:
 
-## 7. Lưu ý trước khi đưa vào hoạt động
+- Kiểm tra tài khoản người bán.
+- Đọc hồ sơ đăng ký.
+- Quản lý gian hàng.
+- Tạo sản phẩm.
+- Tải ảnh sản phẩm vào khu vực chờ duyệt.
+- Theo dõi trạng thái sản phẩm.
 
-- Ba tệp này cung cấp các hàm nghiệp vụ, chưa tự tạo giao diện quản trị, biểu mẫu người bán hoặc giỏ hàng.
-- Chưa có xử lý đơn hàng, thanh toán COD/ngân hàng/Pi, vận chuyển, hoàn tiền hoặc tải ảnh lên Storage.
-- Cần tích hợp với hệ thống đăng nhập hiện có và kiểm thử RLS bằng tài khoản khách, người bán và quản trị viên riêng biệt.
-- Kiểm tra các cột, bảng hiện có trước khi kết nối với dữ liệu sản xuất.
-- Không dùng dữ liệu thử nghiệm hoặc tài khoản admin thật trên website công khai khi chưa kiểm thử bảo mật.
+### 3.5. Quản trị viên
 
-## 8. Thứ tự triển khai khuyến nghị
+`public/js/marketplace/admin.js`
 
-1. Tải ba tệp JavaScript lên GitHub.
-2. Kiểm tra và chạy SQL trên Supabase.
-3. Cấu hình kết nối client theo tệp Supabase hiện có.
-4. Cấp quyền admin.
-5. Hoàn thiện `auth.js` và tích hợp giao diện.
-6. Kiểm thử đăng ký gian hàng → admin duyệt → người bán đăng sản phẩm → admin duyệt → sản phẩm hiển thị công khai.
+Chức năng:
+
+- Tải danh sách hồ sơ người bán chờ duyệt.
+- Tải danh sách gian hàng chờ duyệt.
+- Tải danh sách sản phẩm chờ duyệt.
+- Gửi yêu cầu duyệt hoặc từ chối sản phẩm đến API máy chủ.
+- Kiểm tra quyền quản trị.
+
+### 3.6. Trang khám phá sản phẩm
+
+`public/js/marketplace/marketplace.js`
+
+Chức năng:
+
+- Hiển thị gian hàng đã được duyệt.
+- Hiển thị sản phẩm đang hoạt động.
+- Tìm kiếm sản phẩm.
+- Hiển thị thông tin giá và gian hàng.
+
+### 3.7. Trang người bán
+
+`public/pages/seller/index.html`
+
+Đây là khu vực người bán đăng nhập, gửi hồ sơ, quản lý gian hàng và sản phẩm theo chức năng hiện có.
+
+Không thay thế trang này bằng bản cũ khi chưa kiểm tra các chức năng đang hoạt động.
+
+## 4. CẤU HÌNH SUPABASE
+
+### 4.1. Kiểm tra dự án
+
+Mở Supabase Dashboard của dự án DuLichConDen-V2.
+
+Kiểm tra đúng Project URL:
+
+`https://xxzidzxgeppgbmyapwgi.supabase.co`
+
+### 4.2. Cấu hình khóa công khai
+
+File cấu hình hiện tại:
+
+`config/supabase.js`
+
+Các biến:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+Trong cấu hình hiện tại, `SUPABASE_ANON_KEY` đang sử dụng publishable key mới.
+
+Chỉ dùng khóa công khai trong mã trình duyệt.
+
+### 4.3. Cấu hình khóa phía máy chủ
+
+Cloudflare Pages / Workers sử dụng biến môi trường:
+
+- `SUPABASE_URL`
+- `SUPABASE_SECRET_KEY`
+
+`SUPABASE_SECRET_KEY` là khóa bí mật phía máy chủ, không được đưa vào GitHub hoặc JavaScript công khai.
+
+Không tự ý tạo thêm biến `SUPABASE_SERVICE_ROLE_KEY` nếu mã nguồn hiện tại không yêu cầu.
+
+### 4.4. Kiểm tra kết nối
+
+Mã nguồn `public/js/marketplace/supabase-client.js` đang sử dụng Supabase SDK v2 và import cấu hình từ `config/supabase.js`.
+
+Không sử dụng hướng dẫn tạo `window.supabaseClient` hoặc `window.DuLichConDenSupabase` theo tài liệu cũ.
+
+Không thêm các thẻ script thủ công nếu trang đã sử dụng JavaScript module và đã có cấu trúc import tương ứng.
+
+## 5. CƠ SỞ DỮ LIỆU HIỆN TẠI
+
+Các bảng đã được ghi nhận trong Supabase Production:
+
+1. `carts`
+2. `cart_items`
+3. `categories`
+4. `commissions`
+5. `order_items`
+6. `orders`
+7. `payments`
+8. `pi_pricing_settings`
+9. `pi_rate_history`
+10. `product_images`
+11. `products`
+12. `profiles`
+13. `reviews`
+14. `seller_applications`
+15. `stores`
+
+Đây là danh sách bảng đã được kiểm tra trước đó trong Supabase Table Editor.
+
+### 5.1. Vai trò người dùng
+
+Bảng `profiles` quản lý hồ sơ và vai trò tài khoản.
+
+Các vai trò được sử dụng trong hệ thống:
+
+- `buyer`: Người mua.
+- `seller`: Người bán.
+- `admin`: Quản trị viên.
+
+Không tạo bảng `marketplace_admins` hoặc tự thay đổi vai trò khi chưa kiểm tra cấu trúc hiện tại.
+
+### 5.2. Hồ sơ người bán
+
+Bảng `seller_applications` lưu hồ sơ đăng ký người bán.
+
+Hồ sơ cần được quản trị viên xét duyệt trước khi người dùng được thực hiện các chức năng dành cho người bán.
+
+### 5.3. Gian hàng và sản phẩm
+
+- `stores`: Thông tin gian hàng.
+- `products`: Thông tin sản phẩm.
+- `product_images`: Hình ảnh sản phẩm.
+- `categories`: Danh mục sản phẩm.
+
+### 5.4. Đơn hàng và thanh toán
+
+- `carts`: Giỏ hàng.
+- `cart_items`: Sản phẩm trong giỏ.
+- `orders`: Đơn hàng.
+- `order_items`: Chi tiết đơn hàng.
+- `payments`: Thông tin thanh toán.
+- `commissions`: Phí và hoa hồng.
+
+## 6. NGUYÊN TẮC MIGRATION VÀ SQL
+
+Không chạy lại file SQL khởi tạo cũ chỉ vì tài liệu hướng dẫn yêu cầu.
+
+Trước khi chạy một migration mới:
+
+1. Kiểm tra file SQL thực tế trong repository.
+2. Kiểm tra các bảng và cột hiện có trong Supabase.
+3. Kiểm tra khóa chính, khóa ngoại và chỉ mục.
+4. Kiểm tra chính sách RLS.
+5. Kiểm tra ảnh hưởng đến dữ liệu Production.
+6. Sao lưu dữ liệu.
+7. Chỉ chạy sau khi đã rà soát và phê duyệt.
+
+Nếu không tìm thấy file migration được tài liệu đề cập, phải dừng và xác định đúng file trước khi thao tác.
+
+Không tự tạo các bảng trùng với cấu trúc đang vận hành.
+
+## 7. PHÂN QUYỀN VÀ BẢO MẬT
+
+### 7.1. Người mua
+
+- Xem gian hàng được công khai.
+- Xem sản phẩm đang hoạt động.
+- Quản lý giỏ hàng và đơn hàng của mình.
+- Không được truy cập dữ liệu riêng tư của người khác.
+
+### 7.2. Người bán
+
+- Quản lý gian hàng thuộc quyền sở hữu.
+- Quản lý sản phẩm của gian hàng.
+- Không được tự duyệt hồ sơ hoặc sản phẩm của mình.
+- Không được truy cập dữ liệu riêng tư của người bán khác.
+
+### 7.3. Quản trị viên
+
+- Được xác minh quyền quản trị phía máy chủ.
+- Được duyệt hồ sơ, gian hàng và sản phẩm theo quyền được cấp.
+- Không cấp quyền admin thông qua dữ liệu do trình duyệt tự gửi.
+
+### 7.4. RLS
+
+Supabase Row Level Security phải được kiểm tra đối với các bảng có dữ liệu người dùng.
+
+Không xem việc ẩn nút hoặc ẩn trang trên giao diện là biện pháp bảo mật.
+
+Các thao tác quản trị phải được kiểm tra quyền ở phía máy chủ.
+
+## 8. QUẢN LÝ HÌNH ẢNH SẢN PHẨM
+
+Hệ thống hiện sử dụng các khu vực lưu trữ hình ảnh:
+
+- `product-images-pending`: Ảnh chờ duyệt.
+- `product-images`: Ảnh được công khai sau khi duyệt.
+
+Quy trình:
+
+1. Người bán tải ảnh hợp lệ.
+2. Ảnh được lưu trong khu vực chờ duyệt.
+3. Thông tin ảnh được ghi vào `product_images`.
+4. Quản trị viên kiểm tra sản phẩm và hình ảnh.
+5. Ảnh được chuyển sang khu vực công khai khi được duyệt.
+
+Yêu cầu bảo mật:
+
+- Kiểm tra loại file.
+- Giới hạn dung lượng.
+- Kiểm tra quyền tải lên.
+- Không cho người dùng truy cập ảnh chờ duyệt trái phép.
+- Kiểm tra lỗi khi chuyển ảnh và cập nhật dữ liệu.
+
+## 9. TÍCH HỢP PI NETWORK
+
+Đăng nhập Pi Network được quản lý theo tài liệu riêng:
+
+`README-PI-LOGIN.md`
+
+Các endpoint hiện có trong mã nguồn:
+
+- `/api/pi-auth/login`
+- `/api/pi-auth/link`
+
+Đăng nhập Pi phải được xác minh phía máy chủ và sử dụng Supabase session hiện có.
+
+Không sử dụng Pi UID do trình duyệt tự gửi làm căn cứ xác thực.
+
+Không lưu Pi Wallet Passphrase hoặc khóa bí mật ví.
+
+Thanh toán Pi là chức năng riêng, không đồng nhất với đăng nhập Pi.
+
+## 10. KIỂM THỬ HỆ THỐNG
+
+Thực hiện kiểm thử theo thứ tự:
+
+### 10.1. Kiểm tra kết nối
+
+- Kiểm tra Supabase Project URL.
+- Kiểm tra publishable key.
+- Kiểm tra Cloudflare Secrets.
+- Kiểm tra phiên đăng nhập.
+
+### 10.2. Kiểm tra người mua
+
+- Đăng ký tài khoản.
+- Đăng nhập.
+- Xem gian hàng.
+- Xem sản phẩm.
+- Kiểm tra giỏ hàng và đơn hàng theo chức năng đã triển khai.
+
+### 10.3. Kiểm tra người bán
+
+- Đăng nhập tài khoản người bán.
+- Gửi hồ sơ đăng ký.
+- Kiểm tra trạng thái hồ sơ.
+- Kiểm tra gian hàng.
+- Tạo sản phẩm.
+- Tải ảnh sản phẩm.
+- Kiểm tra trạng thái chờ duyệt.
+
+### 10.4. Kiểm tra quản trị viên
+
+- Đăng nhập tài khoản admin đã được cấp quyền.
+- Tải danh sách hồ sơ chờ duyệt.
+- Duyệt hoặc từ chối hồ sơ.
+- Duyệt hoặc từ chối sản phẩm.
+- Kiểm tra quyền truy cập API.
+- Kiểm tra RLS.
+
+### 10.5. Kiểm tra sau triển khai
+
+- Kiểm tra trên máy tính.
+- Kiểm tra trên điện thoại.
+- Kiểm tra Pi Browser nếu có tích hợp Pi.
+- Kiểm tra nhật ký lỗi Cloudflare.
+- Kiểm tra dữ liệu Supabase.
+
+## 11. QUY TRÌNH PHÁT TRIỂN PHIÊN BẢN 3.0
+
+Nhánh phát triển:
+
+`feature/dulichconden-3.0`
+
+Nguyên tắc:
+
+1. Phát triển trên nhánh riêng.
+2. Giữ nguyên chức năng đang hoạt động.
+3. Kiểm tra file trước khi tạo mới.
+4. Không ghi đè file cũ khi chưa được rà soát.
+5. Không chạy SQL Production khi chưa được phê duyệt.
+6. Commit từng nhóm thay đổi rõ ràng.
+7. Kiểm thử trước khi hợp nhất vào `main`.
+8. Chỉ triển khai Production sau khi xác nhận an toàn.
+
+## 12. TRẠNG THÁI TÀI LIỆU
+
+Tài liệu này mô tả cách kiểm tra và vận hành phân hệ thương mại điện tử DuLichConDen-V2.
+
+Danh sách bảng được ghi nhận từ lần kiểm tra Supabase trước đó. Cấu trúc thực tế cần được xác nhận lại trước khi chạy migration hoặc thay đổi dữ liệu.
+
+Các chức năng chỉ được xem là hoàn thành sau khi mã nguồn, cấu hình, cơ sở dữ liệu và kết quả kiểm thử đã được xác nhận.
+
+---
+
+**Dự án:** DuLichConDen-V2
+
+**Thương hiệu:** DuLichConDen
+
+**Phiên bản phát triển:** 3.0
+
+**Phân hệ:** Sàn thương mại điện tử nhiều người bán
+
+**Cơ sở dữ liệu:** Supabase
+
+**Nền tảng triển khai:** Cloudflare Pages & Workers
+
+**Quản lý mã nguồn:** GitHub
