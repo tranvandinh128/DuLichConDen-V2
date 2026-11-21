@@ -37,6 +37,8 @@ async function readJson(response) {
   }
 }
 
+// Secret Key chỉ được gửi ở header apikey trên máy chủ.
+// Không gửi Secret Key dưới dạng Bearer vì đây không phải JWT.
 function serviceHeaders(env) {
   return {
     apikey: env.SUPABASE_SECRET_KEY,
@@ -77,13 +79,14 @@ async function dbRequest(
 
     throw new ApiError(
       502,
-      "Không thể đọc hoặc lưu cấu hình tỷ giá trên Supabase."
+      "Không thể truy cập dữ liệu tỷ giá trên Supabase. Kiểm tra quyền bảng và cấu hình Secret Key."
     );
   }
 
   return data;
 }
 
+// Đọc cấu hình tỷ giá hiện tại từ Supabase.
 async function getSettings(base, env) {
   const query = new URLSearchParams({
     id: "eq.1",
@@ -102,13 +105,14 @@ async function getSettings(base, env) {
   if (!Array.isArray(rows) || rows.length !== 1) {
     throw new ApiError(
       500,
-      "Chưa tìm thấy bản ghi cấu hình tỷ giá Pi trong Supabase."
+      "Không tìm thấy bản ghi cấu hình tỷ giá Pi có id = 1."
     );
   }
 
   return rows[0];
 }
 
+// Xác thực người dùng Supabase và kiểm tra role admin.
 async function authenticateAdmin(base, env, request) {
   const authorization =
     request.headers.get("Authorization") || "";
@@ -118,11 +122,13 @@ async function authenticateAdmin(base, env, request) {
   if (!match) {
     throw new ApiError(
       401,
-      "Bạn cần đăng nhập bằng tài khoản quản trị."
+      "Thiếu phiên đăng nhập quản trị."
     );
   }
 
-  const response = await fetch(
+  // Bearer ở đây là access token đăng nhập của người dùng,
+  // không phải Secret Key.
+  const authResponse = await fetch(
     apiUrl(base, "/auth/v1/user"),
     {
       method: "GET",
@@ -133,9 +139,9 @@ async function authenticateAdmin(base, env, request) {
     }
   );
 
-  const user = await readJson(response);
+  const user = await readJson(authResponse);
 
-  if (!response.ok || !user?.id) {
+  if (!authResponse.ok || !user?.id) {
     throw new ApiError(
       401,
       "Phiên đăng nhập không hợp lệ hoặc đã hết hạn."
@@ -161,13 +167,14 @@ async function authenticateAdmin(base, env, request) {
   ) {
     throw new ApiError(
       403,
-      "Tài khoản không có quyền quản trị tỷ giá."
+      "Tài khoản không có quyền quản trị tỷ giá Pi."
     );
   }
 
   return user;
 }
 
+// Kiểm tra số nhập vào.
 function positiveDecimal(value, label, min, max) {
   const text = String(value ?? "").trim();
 
@@ -205,7 +212,8 @@ function formatRate(number) {
   return number.toFixed(8);
 }
 
-function rateResponse(settings, values = {}) {
+// Cấu trúc dữ liệu trả về cho website.
+function publicRatePayload(settings, values = {}) {
   return {
     success: true,
     available: true,
@@ -245,6 +253,7 @@ function rateResponse(settings, values = {}) {
   };
 }
 
+// Lấy tỷ giá thị trường PI/USDT từ OKX.
 async function getMarketRate(base, env, settings) {
   const usdtVnd = Number(settings.usdt_vnd_rate);
 
@@ -255,8 +264,7 @@ async function getMarketRate(base, env, settings) {
     );
   }
 
-  // Dùng bản ghi gần nhất trong 45 giây
-  // để tránh gọi OKX ở mọi lượt xem.
+  // Tái sử dụng tỷ giá thị trường mới lấy trong 45 giây gần nhất.
   const historyQuery = new URLSearchParams({
     pricing_mode: "eq.market",
     select:
@@ -285,17 +293,17 @@ async function getMarketRate(base, env, settings) {
     const sameFx =
       Number(cached.usdt_vnd_rate) === usdtVnd;
 
-    const hasUsableRate =
+    const usable =
       Number(cached.pi_usdt_rate) > 0 &&
       Number(cached.effective_vnd_per_pi) > 0;
 
     if (
-      hasUsableRate &&
+      usable &&
       sameFx &&
       age >= 0 &&
       age <= MARKET_CACHE_SECONDS * 1000
     ) {
-      return rateResponse(settings, {
+      return publicRatePayload(settings, {
         effectiveVndPerPi:
           String(cached.effective_vnd_per_pi),
 
@@ -327,7 +335,7 @@ async function getMarketRate(base, env, settings) {
   } catch {
     throw new ApiError(
       503,
-      "Không kết nối được nguồn giá OKX. Tạm thời không thể xác định giá Pi."
+      "Không kết nối được nguồn giá OKX."
     );
   }
 
@@ -359,12 +367,12 @@ async function getMarketRate(base, env, settings) {
   ) {
     throw new ApiError(
       503,
-      "Dữ liệu PI-USDT từ OKX đã quá cũ hoặc có thời gian không hợp lệ."
+      "Dữ liệu PI-USDT từ OKX đã quá cũ hoặc thời gian không hợp lệ."
     );
   }
 
   // Công thức:
-  // VNĐ/PI = Giá PI/USDT x Tỷ giá USDT/VNĐ
+  // VNĐ/PI = Giá PI/USDT x Tỷ giá USDT/VNĐ.
   const effectiveRate = formatRate(
     piUsdt * usdtVnd
   );
@@ -408,7 +416,7 @@ async function getMarketRate(base, env, settings) {
     }
   );
 
-  return rateResponse(settings, {
+  return publicRatePayload(settings, {
     effectiveVndPerPi: effectiveRate,
     piUsdtRate: String(ticker.last),
     usdtVndRate: String(settings.usdt_vnd_rate),
@@ -417,6 +425,7 @@ async function getMarketRate(base, env, settings) {
   });
 }
 
+// API tỷ giá công khai cho website.
 async function getPublicRate(base, env) {
   const settings = await getSettings(base, env);
 
@@ -437,7 +446,7 @@ async function getPublicRate(base, env) {
       );
     }
 
-    return rateResponse(settings, {
+    return publicRatePayload(settings, {
       effectiveVndPerPi:
         String(settings.fixed_vnd_per_pi),
 
@@ -461,6 +470,7 @@ async function getPublicRate(base, env) {
   return getMarketRate(base, env, settings);
 }
 
+// Lưu cấu hình tỷ giá từ trang Admin.
 async function updateSettings(base, env, request) {
   const admin = await authenticateAdmin(
     base,
@@ -470,7 +480,7 @@ async function updateSettings(base, env, request) {
 
   const body = await request.json().catch(() => null);
 
-  if (!body || typeof body !== "object") {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new ApiError(
       400,
       "Nội dung gửi lên không phải JSON hợp lệ."
@@ -490,8 +500,8 @@ async function updateSettings(base, env, request) {
 
   let usdtVndRate = current.usdt_vnd_rate;
   let fixedVndPerPi = null;
-  let source;
   let effectiveRate = null;
+  let source;
 
   if (body.pricingMode === "market") {
     if (
@@ -514,12 +524,13 @@ async function updateSettings(base, env, request) {
     ) {
       throw new ApiError(
         400,
-        "Bạn cần nhập tỷ giá USDT/VNĐ để sử dụng chế độ thị trường."
+        "Bạn cần nhập tỷ giá USDT/VNĐ để dùng chế độ thị trường."
       );
     }
 
     source =
       "OKX PI-USDT ticker + USDT/VNĐ do quản trị viên cấu hình";
+
   } else {
     fixedVndPerPi = positiveDecimal(
       body.fixedVndPerPi,
@@ -544,6 +555,7 @@ async function updateSettings(base, env, request) {
       body.pricingMode === "fixed"
         ? now
         : null,
+    is_active: true,
     updated_by: admin.id,
     updated_at: now
   };
@@ -596,13 +608,13 @@ async function updateSettings(base, env, request) {
   });
 }
 
+// Điểm vào của Cloudflare Pages Function.
 export async function onRequest(context) {
   const { request, env } = context;
-
   const url = new URL(request.url);
-
   const origin = request.headers.get("Origin");
 
+  // Chỉ nhận yêu cầu từ chính website.
   if (origin && origin !== url.origin) {
     return json(
       {
@@ -650,6 +662,29 @@ export async function onRequest(context) {
 
   try {
     if (request.method === "GET") {
+
+      // GET ?admin=1:
+      // Chỉ Admin đã đăng nhập mới được đọc cấu hình đầy đủ.
+      if (url.searchParams.get("admin") === "1") {
+        await authenticateAdmin(
+          env.SUPABASE_URL,
+          env,
+          request
+        );
+
+        const settings = await getSettings(
+          env.SUPABASE_URL,
+          env
+        );
+
+        return json({
+          success: true,
+          data: settings
+        });
+      }
+
+      // GET công khai:
+      // Chỉ trả về tỷ giá tham chiếu cần thiết cho website.
       const result = await getPublicRate(
         env.SUPABASE_URL,
         env
