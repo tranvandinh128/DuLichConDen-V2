@@ -27,7 +27,6 @@ function apiUrl(base, path) {
 
 async function readJson(response) {
   const raw = await response.text();
-
   if (!raw) return null;
 
   try {
@@ -37,8 +36,7 @@ async function readJson(response) {
   }
 }
 
-// Secret Key chỉ được gửi ở header apikey trên máy chủ.
-// Không gửi Secret Key dưới dạng Bearer vì đây không phải JWT.
+// Secret Key chỉ được gửi ở Backend trong header apikey.
 function serviceHeaders(env) {
   return {
     apikey: env.SUPABASE_SECRET_KEY,
@@ -47,46 +45,59 @@ function serviceHeaders(env) {
   };
 }
 
+// userAccessToken được sử dụng khi cần xác minh quyền RLS
+// của tài khoản người dùng đang đăng nhập.
 async function dbRequest(
   base,
   env,
   method,
   resource,
   query = "",
-  body = null
+  body = null,
+  userAccessToken = null
 ) {
   const url = apiUrl(
     base,
     `/rest/v1/${resource}${query ? `?${query}` : ""}`
   );
 
+  const headers = serviceHeaders(env);
+
+  if (userAccessToken) {
+    headers.Authorization = `Bearer ${userAccessToken}`;
+  }
+
   const response = await fetch(url, {
     method,
-    headers: serviceHeaders(env),
-    ...(body !== null
-      ? { body: JSON.stringify(body) }
-      : {})
+    headers,
+    ...(body !== null ? { body: JSON.stringify(body) } : {})
   });
 
   const data = await readJson(response);
 
   if (!response.ok) {
-    console.error(
-      "Supabase pricing API error:",
-      response.status,
-      data?.message || data?.hint || "unknown"
-    );
+    console.error("Supabase pricing API error:", {
+      method,
+      resource,
+      status: response.status,
+      code: data?.code || null,
+      message: data?.message || data?.hint || "unknown"
+    });
+
+    const detail = data?.code
+      ? ` (HTTP ${response.status}, ${data.code})`
+      : ` (HTTP ${response.status})`;
 
     throw new ApiError(
       502,
-      "Không thể truy cập dữ liệu tỷ giá trên Supabase. Kiểm tra quyền bảng và cấu hình Secret Key."
+      `Không thể truy cập bảng ${resource} trên Supabase${detail}. Kiểm tra cấu hình API và quyền truy cập.`
     );
   }
 
   return data;
 }
 
-// Đọc cấu hình tỷ giá hiện tại từ Supabase.
+// Đọc cấu hình tỷ giá.
 async function getSettings(base, env) {
   const query = new URLSearchParams({
     id: "eq.1",
@@ -112,29 +123,25 @@ async function getSettings(base, env) {
   return rows[0];
 }
 
-// Xác thực người dùng Supabase và kiểm tra role admin.
+// Xác thực người dùng và kiểm tra quyền Admin.
 async function authenticateAdmin(base, env, request) {
-  const authorization =
-    request.headers.get("Authorization") || "";
-
+  const authorization = request.headers.get("Authorization") || "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
 
   if (!match) {
-    throw new ApiError(
-      401,
-      "Thiếu phiên đăng nhập quản trị."
-    );
+    throw new ApiError(401, "Thiếu phiên đăng nhập quản trị.");
   }
 
-  // Bearer ở đây là access token đăng nhập của người dùng,
-  // không phải Secret Key.
+  const userAccessToken = match[1];
+
+  // Xác minh access token với Supabase Auth.
   const authResponse = await fetch(
     apiUrl(base, "/auth/v1/user"),
     {
       method: "GET",
       headers: {
         apikey: env.SUPABASE_SECRET_KEY,
-        Authorization: `Bearer ${match[1]}`
+        Authorization: `Bearer ${userAccessToken}`
       }
     }
   );
@@ -153,12 +160,17 @@ async function authenticateAdmin(base, env, request) {
     select: "id,role"
   });
 
+  // Đây là phần sửa chính:
+  // Gửi đồng thời API key của Backend và JWT người dùng.
+  // Supabase sẽ nhận diện đúng người dùng khi áp dụng RLS.
   const profiles = await dbRequest(
     base,
     env,
     "GET",
     "profiles",
-    query.toString()
+    query.toString(),
+    null,
+    userAccessToken
   );
 
   if (
@@ -217,7 +229,6 @@ function publicRatePayload(settings, values = {}) {
   return {
     success: true,
     available: true,
-
     pricingMode: settings.pricing_mode,
 
     effectiveVndPerPi:
@@ -253,7 +264,7 @@ function publicRatePayload(settings, values = {}) {
   };
 }
 
-// Lấy tỷ giá thị trường PI/USDT từ OKX.
+// Lấy tỷ giá PI/USDT từ OKX.
 async function getMarketRate(base, env, settings) {
   const usdtVnd = Number(settings.usdt_vnd_rate);
 
@@ -264,7 +275,7 @@ async function getMarketRate(base, env, settings) {
     );
   }
 
-  // Tái sử dụng tỷ giá thị trường mới lấy trong 45 giây gần nhất.
+  // Kiểm tra lịch sử tỷ giá mới nhất để dùng cache.
   const historyQuery = new URLSearchParams({
     pricing_mode: "eq.market",
     select:
@@ -281,14 +292,11 @@ async function getMarketRate(base, env, settings) {
     historyQuery.toString()
   );
 
-  const cached = Array.isArray(history)
-    ? history[0]
-    : null;
+  const cached = Array.isArray(history) ? history[0] : null;
 
   if (cached) {
     const age =
-      Date.now() -
-      new Date(cached.captured_at).getTime();
+      Date.now() - new Date(cached.captured_at).getTime();
 
     const sameFx =
       Number(cached.usdt_vnd_rate) === usdtVnd;
@@ -314,8 +322,7 @@ async function getMarketRate(base, env, settings) {
           String(cached.usdt_vnd_rate),
 
         rateSource:
-          cached.rate_source ||
-          "OKX PI-USDT + USDT/VNĐ",
+          cached.rate_source || "OKX PI-USDT + USDT/VNĐ",
 
         rateTimestamp: cached.captured_at
       });
@@ -327,9 +334,7 @@ async function getMarketRate(base, env, settings) {
   try {
     okxResponse = await fetch(OKX_TICKER_URL, {
       method: "GET",
-      headers: {
-        Accept: "application/json"
-      },
+      headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(8000)
     });
   } catch {
@@ -371,11 +376,8 @@ async function getMarketRate(base, env, settings) {
     );
   }
 
-  // Công thức:
   // VNĐ/PI = Giá PI/USDT x Tỷ giá USDT/VNĐ.
-  const effectiveRate = formatRate(
-    piUsdt * usdtVnd
-  );
+  const effectiveRate = formatRate(piUsdt * usdtVnd);
 
   const rateTimestamp =
     new Date(tickerTimestamp).toISOString();
@@ -401,7 +403,7 @@ async function getMarketRate(base, env, settings) {
     }
   );
 
-  // Cập nhật tỷ giá mới nhất.
+  // Cập nhật cấu hình tỷ giá mới nhất.
   await dbRequest(
     base,
     env,
@@ -451,12 +453,10 @@ async function getPublicRate(base, env) {
         String(settings.fixed_vnd_per_pi),
 
       rateSource:
-        settings.rate_source ||
-        "Quản trị viên thiết lập",
+        settings.rate_source || "Quản trị viên thiết lập",
 
       rateTimestamp:
-        settings.rate_timestamp ||
-        settings.updated_at
+        settings.rate_timestamp || settings.updated_at
     });
   }
 
@@ -472,11 +472,7 @@ async function getPublicRate(base, env) {
 
 // Lưu cấu hình tỷ giá từ trang Admin.
 async function updateSettings(base, env, request) {
-  const admin = await authenticateAdmin(
-    base,
-    env,
-    request
-  );
+  const admin = await authenticateAdmin(base, env, request);
 
   const body = await request.json().catch(() => null);
 
@@ -495,7 +491,6 @@ async function updateSettings(base, env, request) {
   }
 
   const current = await getSettings(base, env);
-
   const now = new Date().toISOString();
 
   let usdtVndRate = current.usdt_vnd_rate;
@@ -540,9 +535,7 @@ async function updateSettings(base, env, request) {
     );
 
     effectiveRate = fixedVndPerPi;
-
-    source =
-      "Quản trị viên thiết lập tỷ giá cố định";
+    source = "Quản trị viên thiết lập tỷ giá cố định";
   }
 
   const patch = {
@@ -551,10 +544,10 @@ async function updateSettings(base, env, request) {
     fixed_vnd_per_pi: fixedVndPerPi,
     pi_usdt_rate: null,
     rate_source: source,
+
     rate_timestamp:
-      body.pricingMode === "fixed"
-        ? now
-        : null,
+      body.pricingMode === "fixed" ? now : null,
+
     is_active: true,
     updated_by: admin.id,
     updated_at: now
@@ -576,7 +569,7 @@ async function updateSettings(base, env, request) {
     );
   }
 
-  // Lưu lịch sử thay đổi cấu hình.
+  // Lưu lịch sử cấu hình.
   await dbRequest(
     base,
     env,
@@ -614,7 +607,6 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const origin = request.headers.get("Origin");
 
-  // Chỉ nhận yêu cầu từ chính website.
   if (origin && origin !== url.origin) {
     return json(
       {
@@ -647,10 +639,7 @@ export async function onRequest(context) {
     );
   }
 
-  if (
-    !env.SUPABASE_URL ||
-    !env.SUPABASE_SECRET_KEY
-  ) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) {
     return json(
       {
         success: false,
@@ -663,8 +652,7 @@ export async function onRequest(context) {
   try {
     if (request.method === "GET") {
 
-      // GET ?admin=1:
-      // Chỉ Admin đã đăng nhập mới được đọc cấu hình đầy đủ.
+      // GET ?admin=1: chỉ Admin được đọc cấu hình đầy đủ.
       if (url.searchParams.get("admin") === "1") {
         await authenticateAdmin(
           env.SUPABASE_URL,
@@ -683,8 +671,7 @@ export async function onRequest(context) {
         });
       }
 
-      // GET công khai:
-      // Chỉ trả về tỷ giá tham chiếu cần thiết cho website.
+      // GET công khai: trả về tỷ giá tham chiếu cho website.
       const result = await getPublicRate(
         env.SUPABASE_URL,
         env
@@ -710,9 +697,7 @@ export async function onRequest(context) {
     );
 
     const status =
-      error instanceof ApiError
-        ? error.status
-        : 500;
+      error instanceof ApiError ? error.status : 500;
 
     return json(
       {
