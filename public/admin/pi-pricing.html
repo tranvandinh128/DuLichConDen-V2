@@ -1,1 +1,940 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#063d34">
 
+  <title>Quản trị tỷ giá Pi | DuLichConDen 2.0</title>
+
+  <style>
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      background: #f3f7f4;
+      color: #18352d;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      background: #063d34;
+      color: #fff;
+      padding: 20px 16px;
+    }
+
+    .header-inner,
+    main {
+      width: min(900px, calc(100% - 30px));
+      margin: auto;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    header p {
+      margin: 7px 0 0;
+      color: #dce9e2;
+      font-size: 13px;
+    }
+
+    main {
+      padding: 28px 0 60px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #dce8e1;
+      border-radius: 15px;
+      padding: 23px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 18px rgba(20,65,48,.04);
+    }
+
+    h2 {
+      color: #075744;
+      font-size: 19px;
+      margin: 0 0 12px;
+    }
+
+    .muted {
+      color: #63756e;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    label {
+      display: block;
+      margin: 17px 0 7px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      display: block;
+      width: 100%;
+      min-height: 45px;
+      padding: 11px;
+      border: 1px solid #cbdad1;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 15px;
+      color: #18352d;
+    }
+
+    button {
+      min-height: 43px;
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 17px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    .primary {
+      background: #075744;
+      color: #fff;
+    }
+
+    .secondary {
+      background: #eaf2ed;
+      color: #075744;
+    }
+
+    .danger {
+      background: #f5e9e8;
+      color: #963d36;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 13px;
+      border-radius: 9px;
+      background: #f0f5f1;
+      color: #315d48;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .warning {
+      background: #fff7e8;
+      color: #805b20;
+    }
+
+    .error {
+      background: #fff0ef;
+      color: #963d36;
+    }
+
+    .rate-value {
+      color: #075744;
+      font-size: 27px;
+      line-height: 1.35;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .rate-label {
+      color: #63756e;
+      font-size: 12px;
+      margin-bottom: 9px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 13px;
+      margin-top: 17px;
+    }
+
+    .info-box {
+      min-width: 0;
+      padding: 14px;
+      background: #f4f8f5;
+      border-radius: 9px;
+    }
+
+    .info-box strong {
+      display: block;
+      margin-top: 7px;
+      font-size: 14px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .footer {
+      padding: 20px;
+      color: #63756e;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    @media (max-width: 550px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 17px;
+      }
+
+      .actions button {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-inner">
+      <h1>DuLichConDen 2.0</h1>
+      <p>TRUNG TÂM QUẢN TRỊ TỶ GIÁ PI</p>
+    </div>
+  </header>
+
+  <main>
+
+    <div
+      id="message"
+      class="notice"
+      role="status"
+      aria-live="polite"
+    >
+      Đang kiểm tra kết nối...
+    </div>
+
+    <!-- ĐĂNG NHẬP -->
+    <section id="login-section" class="card" hidden>
+      <h2>Đăng nhập quản trị</h2>
+
+      <p class="muted">
+        Sử dụng tài khoản Supabase đã được cấp quyền Admin.
+      </p>
+
+      <form id="login-form">
+
+        <label for="email">Email quản trị</label>
+
+        <input
+          id="email"
+          type="email"
+          autocomplete="username"
+          required
+        >
+
+        <label for="password">Mật khẩu</label>
+
+        <input
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        >
+
+        <div class="actions">
+          <button class="primary" type="submit">
+            Đăng nhập
+          </button>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- KHU VỰC QUẢN TRỊ -->
+    <div id="admin-section" hidden>
+
+      <!-- THÔNG TIN TỶ GIÁ -->
+      <section class="card">
+
+        <h2>Thông tin tỷ giá hiện tại</h2>
+
+        <div class="rate-label">
+          Tỷ giá quy đổi nội bộ
+        </div>
+
+        <div id="current-rate" class="rate-value">
+          Chưa có dữ liệu
+        </div>
+
+        <div class="info-grid">
+
+          <div class="info-box">
+            <span class="muted">Chế độ định giá</span>
+            <strong id="current-mode">---</strong>
+          </div>
+
+          <div class="info-box">
+            <span class="muted">Nguồn tỷ giá</span>
+            <strong id="current-source">---</strong>
+          </div>
+
+          <div class="info-box">
+            <span class="muted">PI/USDT</span>
+            <strong id="current-pi-usdt">---</strong>
+          </div>
+
+          <div class="info-box">
+            <span class="muted">USDT/VNĐ</span>
+            <strong id="current-usdt-vnd">---</strong>
+          </div>
+
+          <div class="info-box">
+            <span class="muted">Tỷ giá cố định</span>
+            <strong id="current-fixed">---</strong>
+          </div>
+
+          <div class="info-box">
+            <span class="muted">Thời điểm cập nhật</span>
+            <strong id="current-time">---</strong>
+          </div>
+
+        </div>
+
+        <div class="actions">
+          <button
+            id="refresh-button"
+            class="secondary"
+            type="button"
+          >
+            Làm mới tỷ giá
+          </button>
+        </div>
+
+        <div id="rate-message" class="notice warning">
+          Chưa kiểm tra tỷ giá thị trường.
+        </div>
+
+      </section>
+
+      <!-- CẤU HÌNH GIÁ -->
+      <section class="card">
+
+        <h2>Cấu hình định giá Pi</h2>
+
+        <p class="muted">
+          Chọn chế độ thị trường hoặc tỷ giá cố định.
+          Thay đổi chỉ có hiệu lực sau khi lưu thành công.
+        </p>
+
+        <label for="pricing-mode">
+          Chế độ định giá
+        </label>
+
+        <select id="pricing-mode">
+
+          <option value="market">
+            MARKET – Theo giá thị trường
+          </option>
+
+          <option value="fixed">
+            FIXED – Tỷ giá cố định
+          </option>
+
+        </select>
+
+        <!-- CHẾ ĐỘ MARKET -->
+        <div id="market-fields">
+
+          <label for="usdt-vnd">
+            Tỷ giá USDT/VNĐ
+          </label>
+
+          <input
+            id="usdt-vnd"
+            type="number"
+            min="1000"
+            max="1000000"
+            step="any"
+            placeholder="Nhập tỷ giá USDT/VNĐ"
+          >
+
+          <p class="muted">
+            Nhập số VNĐ quy đổi cho 1 USDT
+            theo nguồn tỷ giá bạn lựa chọn.
+          </p>
+
+        </div>
+
+        <!-- CHẾ ĐỘ FIXED -->
+        <div id="fixed-fields" hidden>
+
+          <label for="fixed-rate">
+            Tỷ giá cố định VNĐ/PI
+          </label>
+
+          <input
+            id="fixed-rate"
+            type="number"
+            min="1"
+            max="1000000000000"
+            step="any"
+            placeholder="Nhập số VNĐ cho 1 Pi"
+          >
+
+          <p class="muted">
+            Ví dụ: nhập 100000 nếu quy định nội bộ
+            1 PI tương ứng 100.000 VNĐ.
+          </p>
+
+        </div>
+
+        <div class="notice warning">
+          Tỷ giá cố định là tỷ giá tham chiếu nội bộ của sàn,
+          không phải cam kết Pi được bảo đảm hoặc neo giá
+          ở mức đó trên thị trường.
+        </div>
+
+        <div class="actions">
+          <button
+            id="save-button"
+            class="primary"
+            type="button"
+          >
+            Lưu cấu hình tỷ giá
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ĐĂNG XUẤT -->
+      <section class="card">
+
+        <h2>Phiên quản trị</h2>
+
+        <p class="muted">
+          Đăng xuất khi hoàn tất công việc quản trị.
+        </p>
+
+        <button
+          id="logout-button"
+          class="danger"
+          type="button"
+        >
+          Đăng xuất
+        </button>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <div class="footer">
+    DuLichConDen 2.0 · Quản trị hệ thống định giá Pi
+  </div>
+
+  <script type="module">
+
+    import {
+      supabase,
+      supabaseConfigured
+    } from "../js/marketplace/supabase-client.js";
+
+    import {
+      getCurrentUser,
+      signIn,
+      signOut
+    } from "../js/marketplace/auth.js";
+
+    const $ = id => document.getElementById(id);
+
+    function showMessage(text, type = "") {
+      const element = $("message");
+
+      element.textContent = text;
+
+      element.className =
+        "notice" + (type ? ` ${type}` : "");
+    }
+
+    function showRateMessage(text, type = "warning") {
+      const element = $("rate-message");
+
+      element.textContent = text;
+
+      element.className =
+        "notice" + (type ? ` ${type}` : "");
+    }
+
+    function formatNumber(value) {
+      if (
+        value === null ||
+        value === undefined ||
+        value === ""
+      ) {
+        return "---";
+      }
+
+      const number = Number(value);
+
+      if (!Number.isFinite(number)) {
+        return "---";
+      }
+
+      return number.toLocaleString("vi-VN", {
+        maximumFractionDigits: 8
+      });
+    }
+
+    function formatDate(value) {
+      if (!value) return "---";
+
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return "---";
+      }
+
+      return date.toLocaleString("vi-VN");
+    }
+
+    function setModeFields() {
+      const mode = $("pricing-mode").value;
+
+      $("market-fields").hidden = mode !== "market";
+      $("fixed-fields").hidden = mode !== "fixed";
+    }
+
+    // Lấy access token của phiên đăng nhập hiện tại.
+    async function getAccessToken() {
+      const {
+        data,
+        error
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        throw new Error(
+          "Không đọc được phiên đăng nhập: " +
+          error.message
+        );
+      }
+
+      const token = data?.session?.access_token;
+
+      if (!token) {
+        throw new Error(
+          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+        );
+      }
+
+      return token;
+    }
+
+    // Đọc cấu hình từ API Cloudflare.
+    // API tự xác thực người dùng và quyền Admin.
+    async function callAdminSettings() {
+      const token = await getAccessToken();
+
+      const response = await fetch(
+        "/api/pricing?admin=1",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json"
+          },
+          cache: "no-store"
+        }
+      );
+
+      const result = await response.json().catch(() => null);
+
+      if (
+        !response.ok ||
+        !result?.success ||
+        !result?.data
+      ) {
+        throw new Error(
+          result?.error ||
+          `Không đọc được cấu hình (HTTP ${response.status}).`
+        );
+      }
+
+      return result.data;
+    }
+
+    // Hiển thị cấu hình hiện tại.
+    async function loadSettings() {
+      // Không truy vấn bảng từ trình duyệt.
+      // Toàn bộ thao tác đọc cấu hình đi qua Cloudflare API.
+      const data = await callAdminSettings();
+
+      $("pricing-mode").value =
+        data.pricing_mode || "market";
+
+      $("usdt-vnd").value =
+        data.usdt_vnd_rate ?? "";
+
+      $("fixed-rate").value =
+        data.fixed_vnd_per_pi ?? "";
+
+      $("current-mode").textContent =
+        data.pricing_mode === "fixed"
+          ? "FIXED – Cố định"
+          : "MARKET – Thị trường";
+
+      $("current-source").textContent =
+        data.rate_source || "---";
+
+      $("current-pi-usdt").textContent =
+        data.pi_usdt_rate
+          ? formatNumber(data.pi_usdt_rate) + " USDT"
+          : "---";
+
+      $("current-usdt-vnd").textContent =
+        data.usdt_vnd_rate
+          ? formatNumber(data.usdt_vnd_rate) + " VNĐ"
+          : "---";
+
+      $("current-fixed").textContent =
+        data.fixed_vnd_per_pi
+          ? formatNumber(data.fixed_vnd_per_pi) + " VNĐ/PI"
+          : "---";
+
+      $("current-time").textContent =
+        formatDate(
+          data.rate_timestamp || data.updated_at
+        );
+
+      $("current-rate").textContent =
+        data.pricing_mode === "fixed" &&
+        data.fixed_vnd_per_pi
+          ? formatNumber(data.fixed_vnd_per_pi) + " VNĐ / PI"
+          : "Đang sử dụng chế độ thị trường";
+
+      setModeFields();
+    }
+
+    // Lấy tỷ giá công khai từ API.
+    async function checkMarketRate() {
+      showRateMessage(
+        "Đang lấy tỷ giá từ API...",
+        ""
+      );
+
+      try {
+        const response = await fetch(
+          "/api/pricing",
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json"
+            },
+            cache: "no-store"
+          }
+        );
+
+        const result = await response.json().catch(() => null);
+
+        if (
+          !response.ok ||
+          !result?.success ||
+          !result?.available
+        ) {
+          throw new Error(
+            result?.error ||
+            `Không lấy được tỷ giá (HTTP ${response.status}).`
+          );
+        }
+
+        $("current-rate").textContent =
+          formatNumber(result.effectiveVndPerPi) +
+          " VNĐ / PI";
+
+        $("current-mode").textContent =
+          result.pricingMode === "fixed"
+            ? "FIXED – Cố định"
+            : "MARKET – Thị trường";
+
+        $("current-source").textContent =
+          result.rateSource || "---";
+
+        $("current-pi-usdt").textContent =
+          result.piUsdtRate
+            ? formatNumber(result.piUsdtRate) + " USDT"
+            : "---";
+
+        $("current-usdt-vnd").textContent =
+          result.usdtVndRate
+            ? formatNumber(result.usdtVndRate) + " VNĐ"
+            : "---";
+
+        $("current-fixed").textContent =
+          result.fixedVndPerPi
+            ? formatNumber(result.fixedVndPerPi) + " VNĐ/PI"
+            : "---";
+
+        $("current-time").textContent =
+          formatDate(result.rateTimestamp);
+
+        showRateMessage(
+          "Đã lấy được tỷ giá tham chiếu từ máy chủ.",
+          ""
+        );
+
+      } catch (error) {
+        showRateMessage(
+          error.message,
+          "warning"
+        );
+      }
+    }
+
+    // Hiển thị trang quản trị sau khi xác thực.
+    async function showAdmin() {
+      const user = await getCurrentUser();
+
+      if (!user) {
+        $("login-section").hidden = false;
+        $("admin-section").hidden = true;
+
+        showMessage(
+          "Vui lòng đăng nhập bằng tài khoản quản trị."
+        );
+
+        return;
+      }
+
+      // API Cloudflare xác minh role=admin
+      // trước khi trả cấu hình.
+      await loadSettings();
+
+      $("login-section").hidden = true;
+      $("admin-section").hidden = false;
+
+      showMessage(
+        "Đã xác thực tài khoản quản trị thành công."
+      );
+
+      await checkMarketRate();
+    }
+
+    // Lưu cấu hình qua Cloudflare API.
+    async function saveSettings() {
+      const mode = $("pricing-mode").value;
+
+      const body = {
+        pricingMode: mode
+      };
+
+      if (mode === "market") {
+        const value =
+          $("usdt-vnd").value.trim();
+
+        const number = Number(value);
+
+        if (
+          !value ||
+          !Number.isFinite(number) ||
+          number < 1000 ||
+          number > 1000000
+        ) {
+          throw new Error(
+            "Nhập tỷ giá USDT/VNĐ từ 1.000 đến 1.000.000 VNĐ."
+          );
+        }
+
+        body.usdtVndRate = value;
+
+      } else if (mode === "fixed") {
+        const value =
+          $("fixed-rate").value.trim();
+
+        const number = Number(value);
+
+        if (
+          !value ||
+          !Number.isFinite(number) ||
+          number <= 0 ||
+          number > 1_000_000_000_000
+        ) {
+          throw new Error(
+            "Nhập tỷ giá cố định VNĐ/PI hợp lệ."
+          );
+        }
+
+        body.fixedVndPerPi = value;
+
+      } else {
+        throw new Error(
+          "Chế độ định giá không hợp lệ."
+        );
+      }
+
+      const token = await getAccessToken();
+
+      const response = await fetch(
+        "/api/pricing",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          cache: "no-store",
+          body: JSON.stringify(body)
+        }
+      );
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.error ||
+          `Không lưu được cấu hình (HTTP ${response.status}).`
+        );
+      }
+
+      showMessage(
+        result.message ||
+        "Đã lưu cấu hình tỷ giá Pi thành công."
+      );
+
+      await loadSettings();
+      await checkMarketRate();
+    }
+
+    // Chuyển đổi trường nhập theo chế độ định giá.
+    $("pricing-mode").addEventListener(
+      "change",
+      setModeFields
+    );
+
+    // Đăng nhập.
+    $("login-form").addEventListener(
+      "submit",
+      async event => {
+        event.preventDefault();
+
+        const button =
+          event.submitter ||
+          $("login-form").querySelector(
+            'button[type="submit"]'
+          );
+
+        button.disabled = true;
+
+        try {
+          await signIn(
+            $("email").value.trim(),
+            $("password").value
+          );
+
+          await showAdmin();
+
+        } catch (error) {
+          $("login-section").hidden = false;
+          $("admin-section").hidden = true;
+
+          showMessage(
+            error.message,
+            "error"
+          );
+
+        } finally {
+          button.disabled = false;
+        }
+      }
+    );
+
+    // Lưu cấu hình.
+    $("save-button").addEventListener(
+      "click",
+      async () => {
+        const button = $("save-button");
+
+        button.disabled = true;
+
+        try {
+          await saveSettings();
+
+        } catch (error) {
+          showMessage(
+            error.message,
+            "error"
+          );
+
+        } finally {
+          button.disabled = false;
+        }
+      }
+    );
+
+    // Làm mới tỷ giá.
+    $("refresh-button").addEventListener(
+      "click",
+      checkMarketRate
+    );
+
+    // Đăng xuất.
+    $("logout-button").addEventListener(
+      "click",
+      async () => {
+        try {
+          await signOut();
+
+          $("admin-section").hidden = true;
+          $("login-section").hidden = false;
+
+          showMessage("Đã đăng xuất.");
+
+        } catch (error) {
+          showMessage(
+            error.message,
+            "error"
+          );
+        }
+      }
+    );
+
+    // Khởi tạo trang.
+    async function init() {
+      if (!supabaseConfigured || !supabase) {
+        showMessage(
+          "Chưa cấu hình kết nối Supabase ở frontend.",
+          "error"
+        );
+
+        return;
+      }
+
+      try {
+        await showAdmin();
+
+      } catch (error) {
+        $("login-section").hidden = false;
+        $("admin-section").hidden = true;
+
+        showMessage(
+          error.message,
+          "error"
+        );
+      }
+    }
+
+    init();
+
+  </script>
+</body>
+</html>
