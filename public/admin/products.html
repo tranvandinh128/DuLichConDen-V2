@@ -1,11 +1,609 @@
+
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Products | DuLichConDen</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Trang quản trị người bán, gian hàng và sản phẩm DuLichConDen 2.0.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#075744">
+
+  <title>Quản trị gian hàng | DuLichConDen 2.0</title>
+
+  <link rel="stylesheet" href="../css/marketplace.css">
+
+  <style>
+    :root {
+      --admin-bg: #f5f8f6;
+      --admin-green: #075744;
+      --admin-dark: #063d34;
+      --admin-text: #18352d;
+      --admin-muted: #63756e;
+      --admin-border: #dce8e1;
+      --admin-white: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--admin-bg);
+      color: var(--admin-text);
+      font-family: Arial, Helvetica, sans-serif;
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .admin-header {
+      background: var(--admin-dark);
+      color: white;
+      padding: 16px 0;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, .12);
+    }
+
+    .admin-header-inner {
+      width: min(1160px, calc(100% - 32px));
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .admin-brand-mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      background: #dcb77a;
+      color: #063d34;
+      font-weight: 900;
+      border-radius: 12px;
+    }
+
+    .admin-brand strong {
+      display: block;
+      font-size: 17px;
+    }
+
+    .admin-brand small {
+      display: block;
+      margin-top: 4px;
+      color: #dce9e2;
+      font-size: 12px;
+    }
+
+    .admin-header-link {
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 9px;
+      padding: 10px 14px;
+      color: white;
+      font-size: 13px;
+    }
+
+    .admin-header-link:hover {
+      background: rgba(255,255,255,.1);
+    }
+
+    .admin-main {
+      width: min(1160px, calc(100% - 32px));
+      margin: 32px auto 60px;
+    }
+
+    .admin-page-heading {
+      margin-bottom: 22px;
+    }
+
+    .admin-eyebrow {
+      color: #9b783e;
+      font-weight: 800;
+      letter-spacing: 1.8px;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .admin-page-heading h1 {
+      margin: 8px 0;
+      color: var(--admin-dark);
+      font-size: clamp(27px, 4vw, 38px);
+    }
+
+    .admin-page-heading p {
+      margin: 0;
+      color: var(--admin-muted);
+      line-height: 1.6;
+    }
+
+    .admin-alert {
+      margin: 18px 0;
+    }
+
+    .admin-message {
+      min-height: 22px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .login-card {
+      max-width: 480px;
+      margin: 38px auto;
+      padding: 28px;
+      border: 1px solid var(--admin-border);
+      border-radius: 18px;
+      background: var(--admin-white);
+      box-shadow: 0 12px 32px rgba(20, 65, 48, .07);
+    }
+
+    .login-card h2 {
+      margin: 0 0 8px;
+      color: var(--admin-dark);
+      font-size: 24px;
+    }
+
+    .login-description {
+      color: var(--admin-muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 22px;
+    }
+
+    .admin-form {
+      display: grid;
+      gap: 15px;
+    }
+
+    .admin-form label {
+      display: grid;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--admin-text);
+    }
+
+    .admin-input {
+      width: 100%;
+      min-height: 46px;
+      padding: 11px 13px;
+      border: 1px solid #cbdad1;
+      border-radius: 9px;
+      background: white;
+      color: var(--admin-text);
+      font: inherit;
+      font-size: 14px;
+    }
+
+    .admin-input:focus {
+      outline: 2px solid #8ab7a2;
+      outline-offset: 1px;
+    }
+
+    .admin-button {
+      min-height: 43px;
+      padding: 11px 17px;
+      border: 0;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .admin-button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .admin-button-primary {
+      background: var(--admin-green);
+      color: white;
+    }
+
+    .admin-button-primary:hover:not(:disabled) {
+      background: var(--admin-dark);
+    }
+
+    .admin-button-muted {
+      background: #f3eee8;
+      color: #654b35;
+    }
+
+    .admin-button-muted:hover:not(:disabled) {
+      background: #eadfd2;
+    }
+
+    .admin-button:focus-visible,
+    .admin-header-link:focus-visible {
+      outline: 3px solid #dcb77a;
+      outline-offset: 3px;
+    }
+
+    .admin-notice {
+      margin-top: 17px;
+      padding: 12px 14px;
+      border: 1px solid #eadfc5;
+      border-radius: 10px;
+      background: #fff9ec;
+      color: #70552a;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .admin-overview {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 22px 0;
+    }
+
+    .admin-overview-card {
+      padding: 18px;
+      background: white;
+      border: 1px solid var(--admin-border);
+      border-radius: 13px;
+    }
+
+    .admin-overview-card strong {
+      display: block;
+      font-size: 14px;
+      color: var(--admin-dark);
+    }
+
+    .admin-overview-card span {
+      display: block;
+      margin-top: 7px;
+      color: var(--admin-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .admin-section {
+      margin: 22px 0;
+      padding: 22px;
+      background: white;
+      border: 1px solid var(--admin-border);
+      border-radius: 16px;
+      box-shadow: 0 5px 18px rgba(20, 65, 48, .035);
+    }
+
+    .admin-section-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .admin-section-heading h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--admin-dark);
+    }
+
+    .admin-section-heading p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--admin-muted);
+      line-height: 1.5;
+    }
+
+    .admin-section-number {
+      display: inline-grid;
+      place-items: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 8px;
+      border-radius: 9px;
+      background: #eaf3ee;
+      color: var(--admin-green);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .admin-list {
+      min-height: 55px;
+    }
+
+    .admin-empty {
+      padding: 17px;
+      border: 1px dashed #cbd9d1;
+      border-radius: 10px;
+      color: var(--admin-muted);
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .admin-application {
+      align-items: flex-start;
+    }
+
+    .admin-application > div:first-child {
+      min-width: 0;
+      flex: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .admin-application strong {
+      color: var(--admin-dark);
+      font-size: 15px;
+    }
+
+    .admin-application small {
+      display: block;
+      color: var(--admin-muted);
+      font-size: 11px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .admin-actions {
+      flex-wrap: wrap;
+    }
+
+    .admin-actions .button {
+      min-height: 38px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .admin-footer {
+      padding: 22px 16px;
+      background: var(--admin-dark);
+      color: #dce9e2;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 760px) {
+      .admin-main {
+        margin-top: 22px;
+      }
+
+      .admin-overview {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-section {
+        padding: 16px;
+      }
+
+      .admin-application {
+        flex-direction: column;
+      }
+
+      .admin-actions {
+        width: 100%;
+      }
+
+      .admin-actions .button {
+        flex: 1;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 20px;
+      }
+
+      .admin-header-inner {
+        align-items: flex-start;
+      }
+
+      .admin-header-link {
+        width: 100%;
+        text-align: center;
+      }
+
+      .admin-section-heading h2 {
+        font-size: 18px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<!-- TODO: Xây dựng giao diện trang này. -->
+  <div id="page-alert" class="market-alert admin-alert" hidden></div>
+
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <a class="admin-brand" href="../index.html">
+        <span class="admin-brand-mark">CĐ</span>
+        <span>
+          <strong>DuLichConDen 2.0</strong>
+          <small>TRUNG TÂM QUẢN TRỊ SÀN THƯƠNG MẠI</small>
+        </span>
+      </a>
+
+      <a class="admin-header-link" href="../index.html">
+        ← Quay lại website
+      </a>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-page-heading">
+      <span class="admin-eyebrow">ADMINISTRATION CENTER</span>
+      <h1>Quản trị người bán và sản phẩm</h1>
+      <p>
+        Tiếp nhận hồ sơ, kiểm tra gian hàng và duyệt sản phẩm
+        trước khi hiển thị công khai trên DuLichConDen.
+      </p>
+    </div>
+
+    <!-- THÔNG BÁO CHUNG -->
+    <div
+      id="admin-message"
+      class="notice admin-message"
+      role="status"
+      aria-live="polite"
+    >
+      Vui lòng đăng nhập bằng tài khoản quản trị.
+    </div>
+
+    <!-- ĐĂNG NHẬP ADMIN -->
+    <section id="admin-login" class="login-card">
+      <h2>Đăng nhập quản trị</h2>
+
+      <p class="login-description">
+        Sử dụng tài khoản Supabase đã được cấp quyền Admin
+        để truy cập khu vực quản trị.
+      </p>
+
+      <form id="admin-login-form" class="admin-form">
+        <label for="admin-email">
+          Địa chỉ email
+          <input
+            id="admin-email"
+            class="admin-input"
+            type="email"
+            name="email"
+            placeholder="Nhập email quản trị"
+            autocomplete="username"
+            required
+          >
+        </label>
+
+        <label for="admin-password">
+          Mật khẩu
+          <input
+            id="admin-password"
+            class="admin-input"
+            type="password"
+            name="password"
+            placeholder="Nhập mật khẩu"
+            autocomplete="current-password"
+            required
+          >
+        </label>
+
+        <button
+          type="submit"
+          class="admin-button admin-button-primary"
+        >
+          Đăng nhập quản trị
+        </button>
+      </form>
+
+      <div class="admin-notice">
+        Chỉ tài khoản đã được cấp quyền
+        <strong>admin</strong> trong Supabase mới được phép
+        sử dụng các chức năng duyệt.
+      </div>
+    </section>
+
+    <!-- KHU VỰC QUẢN TRỊ SAU ĐĂNG NHẬP -->
+    <section id="admin-content" hidden>
+      <div class="admin-overview">
+        <div class="admin-overview-card">
+          <strong>Hồ sơ người bán</strong>
+          <span>Kiểm tra thông tin và xét duyệt đăng ký tham gia sàn.</span>
+        </div>
+
+        <div class="admin-overview-card">
+          <strong>Gian hàng</strong>
+          <span>Xác nhận cửa hàng trước khi cho phép đăng bán.</span>
+        </div>
+
+        <div class="admin-overview-card">
+          <strong>Sản phẩm</strong>
+          <span>Kiểm tra thông tin và ảnh trước khi công khai.</span>
+        </div>
+      </div>
+
+      <!-- 1. HỒ SƠ NGƯỜI BÁN -->
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <h2>01. Hồ sơ đăng ký người bán</h2>
+            <p>
+              Các cá nhân, hộ kinh doanh và doanh nghiệp
+              đang chờ xét duyệt.
+            </p>
+          </div>
+          <span class="admin-section-number">01</span>
+        </div>
+
+        <div id="application-list" class="admin-list">
+          <div class="admin-empty">
+            Đang tải hồ sơ người bán...
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. GIAN HÀNG -->
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <h2>02. Gian hàng chờ duyệt</h2>
+            <p>
+              Kiểm tra tên, thông tin và chủ sở hữu
+              của từng gian hàng.
+            </p>
+          </div>
+          <span class="admin-section-number">02</span>
+        </div>
+
+        <div id="store-list" class="admin-list">
+          <div class="admin-empty">
+            Đang tải danh sách gian hàng...
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. SẢN PHẨM -->
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <h2>03. Sản phẩm chờ duyệt</h2>
+            <p>
+              Kiểm tra tên, mô tả, giá và trạng thái
+              trước khi mở bán.
+            </p>
+          </div>
+          <span class="admin-section-number">03</span>
+        </div>
+
+        <div id="product-list" class="admin-list">
+          <div class="admin-empty">
+            Đang tải danh sách sản phẩm...
+          </div>
+        </div>
+      </section>
+
+      <div class="admin-notice">
+        <strong>Nguyên tắc quản trị:</strong>
+        Chỉ sản phẩm đã được Admin duyệt mới được phép
+        chuyển sang trạng thái đang bán. Hãy kiểm tra kỹ
+        thông tin và ảnh trước khi xác nhận.
+      </div>
+    </section>
+  </main>
+
+  <footer class="admin-footer">
+    DuLichConDen 2.0 · Hệ thống quản trị sàn thương mại điện tử
+    <br>
+    Kết nối cộng đồng · Quản lý hiện đại · Phục vụ khách hàng
+  </footer>
+
+  <script type="module" src="../js/marketplace/admin.js"></script>
 </body>
 </html>
